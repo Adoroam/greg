@@ -28,6 +28,20 @@ const colors = {
   white: '\x1b[37m'
 }
 
+const colorRegex = /color=(.+)/
+
+const genReplaceString = target => {
+  if (flags.some(flag => flag.startsWith('color='))) {
+    let colorFlag = flags.find(flag => flag.startsWith('color='))
+    let matches = colorFlag.match(colorRegex)
+    let color = colors[matches[1]] || colors.green
+    return `${color}${target}${colors.reset}`
+  } else {
+    return `${colors.green}${target}${colors.reset}`
+  }
+}
+   
+
 term.on('line', line => {
   if (line === 'ls') {
     exec('ls', (err, sout, serr) => {
@@ -40,11 +54,11 @@ term.on('line', line => {
       .on('data', data => data
         .toString()
         .split('\n')
-        .filter((line, ind) => (flags && flags.some(flag => flag === 'all'))
+        .filter((line, ind) => (flags && flags.includes('all'))
           ? true
           : regex.test(line))
         .map(line => line
-        .replace(regex, `${colors.green}${target}${colors.reset}`))
+        .replace(regex, genReplaceString(target)))
         .forEach(line => console.log(line)))
       .on('close', () => process.exit(0))
   }
